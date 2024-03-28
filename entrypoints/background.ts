@@ -1,11 +1,6 @@
 import { Ref, ref } from "vue";
 import { browser } from "wxt/browser";
 
-function handleFetchXAuth(x_auth: Ref<string | undefined>, sender) {
-  browser.runtime.sendMessage(sender.tab.id, { x_auth: x_auth })
-  console.log("send message to remote", x_auth.value);
-}
-
 export default defineBackground(() => {
   let x_auth = ref<string>();
   browser.runtime.onMessage.addListener((request, sender) => {
@@ -14,9 +9,9 @@ export default defineBackground(() => {
       console.log("Cannot read action from request.");
       return;
     }
-    if (request.action == "fetch_x_auth") {
-      console.log("sender=", sender);
-      handleFetchXAuth(x_auth, sender);
+    if (request.action == "fetch_x_auth" && sender.tab?.id !== undefined) {
+      browser.tabs.sendMessage(sender.tab?.id, {x_auth: x_auth})
+      console.log("send message=", x_auth.value, " to remote=", browser.runtime.id);
     }
     return true;
   })
@@ -44,4 +39,28 @@ export default defineBackground(() => {
     }, {
     urls: ["*://twitter.com/i/api/*"],
   }, ["requestHeaders"])
+
+
+  browser.runtime.onInstalled.addListener(async () => {
+    const manifest = browser.runtime.getManifest();
+    if (manifest.content_scripts === undefined) {
+      return;
+    }
+    for (const cs of manifest.content_scripts) {
+      for (const tab of await browser.tabs.query({ url: cs.matches })) {
+        if (tab.id === undefined) {
+          continue;
+        }
+        browser.scripting.executeScript({
+          files: cs.js,
+          target: {
+            tabId: tab.id,
+            allFrames: cs.all_frames
+          },
+          injectImmediately: cs.run_at === 'document_start'
+        })
+      }
+
+    }
+  })
 });
