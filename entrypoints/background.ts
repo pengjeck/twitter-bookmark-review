@@ -1,8 +1,10 @@
 import { Ref, ref } from "vue";
 import { browser } from "wxt/browser";
 
+
 export default defineBackground(() => {
-  let x_auth = ref<string>();
+  let x_auth_context = ref<{}>();
+
   browser.runtime.onMessage.addListener((request, sender) => {
     if (sender.tab?.id === undefined) {
       console.log("sender tab id not exist, ignore this message.");
@@ -16,38 +18,38 @@ export default defineBackground(() => {
     }
 
     if (request.action == "fetch_x_auth") {
-      browser.tabs.sendMessage(sender.tab?.id, {x_auth: x_auth})
-      console.log("send message=", x_auth.value, " to remote=", browser.runtime.id);
+      if (x_auth_context !== undefined) {
+        browser.tabs.sendMessage(sender.tab?.id, x_auth_context.value)
+        console.log("send message=", x_auth_context.value, " to remote=", browser.runtime.id);
+      } else {
+        console.log("x_auth was unexpectedly not assigned a value.");
+      }
     }
     return true;
   })
 
-  browser.webRequest.onBeforeSendHeaders.addListener(
+  browser.webRequest.onSendHeaders.addListener(
     (details) => {
       if (details.requestHeaders == undefined) {
         console.log("request header is empty. cannot fetch authorization message from header");
         return;
       }
 
-      if (x_auth.value !== undefined) {
+      if (x_auth_context.value !== undefined) {
         console.log("x_auth already has a value, so it won't be reassigned.")
         return;
       }
-
+      console.log("request detail=", details)
       for (var i = 0; i < details.requestHeaders.length; ++i) {
-        if (details.requestHeaders[i].name === 'authorization') {
-          if (x_auth.value == undefined && details.requestHeaders[i].value) {
-            console.log('Authorization Header:', details.requestHeaders[i].value, " assign to x_auth");
-            x_auth.value = details.requestHeaders[i].value ?? undefined;
-            break;
-          } else {
-            console.warn('Authorization Header is empty');
-          }
+        if (details.requestHeaders[i].name === 'Cookie') {
+          console.log('Authorization Header:', details.requestHeaders, " assign to x_auth");
+          x_auth_context.value = details.requestHeaders
+          return;
         }
       }
     }, {
     urls: ["*://twitter.com/i/api/*"],
-  }, ["requestHeaders"])
+  }, ["requestHeaders", "extraHeaders"])
 
 
   browser.runtime.onInstalled.addListener(async () => {
