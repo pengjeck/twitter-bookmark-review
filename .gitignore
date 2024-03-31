@@ -28,3 +28,5 @@ stats-*.json
 debug
 
 .vscode
+
+tmp*.*

@@ -7,7 +7,9 @@ export default defineConfig({
   entrypointsDir: "entrypoints",
   manifest: {
     host_permissions: ['*://twitter.com/*'],
-    permissions: ["storage", "notifications", "webRequest"]
+    permissions: ["storage", "notifications", "webRequest"],
+    content_security_policy: {
+    }
   },
   imports: {
     addons: {

@@ -19,8 +19,11 @@ export default defineBackground(() => {
 
     if (request.action == "fetch_x_auth") {
       if (x_auth_context !== undefined) {
-        browser.tabs.sendMessage(sender.tab?.id, x_auth_context.value)
-        console.log("send message=", x_auth_context.value, " to remote=", browser.runtime.id);
+        browser.tabs.sendMessage(sender.tab?.id, {
+          action: request.action,
+          headers: x_auth_context.value
+        })
+        console.log("Send message=", x_auth_context.value, " to remote=", browser.runtime.id);
       } else {
         console.log("x_auth was unexpectedly not assigned a value.");
       }
