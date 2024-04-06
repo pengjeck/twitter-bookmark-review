@@ -9,7 +9,7 @@ export default defineContentScript({
         observer(({ element }) => {
             const newElem = createApp(BookmarkSidebar)
             const newElement = document.createElement('div');
-            newElement.innerHTML = '这是一个新元素';
+            newElement.innerHTML = '这是一个新元素1';
             newElem.mount(newElement)
             var parent = element.parentNode?.parentNode?.parentNode;
             console.log(parent);

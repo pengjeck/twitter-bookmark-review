@@ -1,16 +1,24 @@
 import { Ref, ref } from "vue";
 import { browser } from "wxt/browser";
+import { Runtime } from "wxt/browser";
 
+function sendMessageToRemote(message: any, sender: Runtime.MessageSender) {
+  if (sender.tab?.id !== undefined) {
+    browser.tabs.sendMessage(sender.tab?.id, message);
+    return;
+  }
+
+  // 截取sender.url前缀，判断是否是本扩展的content script
+  if (sender?.url?.substring(0, 19) === "chrome-extension://") {
+    browser.runtime.sendMessage(browser.runtime.id, message);
+    return;
+  }
+}
 
 export default defineBackground(() => {
   let x_auth_context = ref<{}>();
 
-  browser.runtime.onMessage.addListener((request, sender) => {
-    if (sender.tab?.id === undefined) {
-      console.log("sender tab id not exist, ignore this message.");
-      return;
-    }
-
+  browser.runtime.onMessage.addListener((request, sender) => {    
     console.log("Received message=", request, " from content script");
     if (!request.action) {
       console.log("Cannot read action from request.");
@@ -19,11 +27,8 @@ export default defineBackground(() => {
 
     if (request.action == "fetch_x_auth") {
       if (x_auth_context !== undefined) {
-        browser.tabs.sendMessage(sender.tab?.id, {
-          action: request.action,
-          headers: x_auth_context.value
-        })
-        console.log("Send message=", x_auth_context.value, " to remote=", browser.runtime.id);
+        sendMessageToRemote({action: request.action, headers: x_auth_context.value}, sender);
+        console.log("Send message=", x_auth_context.value, " to remote=", sender.url);
       } else {
         console.log("x_auth was unexpectedly not assigned a value.");
       }

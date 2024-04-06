@@ -17,6 +17,9 @@ export default defineConfig({
     },
   },
   vite: () => ({
+    build: {
+      target: "esnext"
+    },
     plugins: [vue()],
   }),
 });

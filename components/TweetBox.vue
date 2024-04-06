@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { Tweet, User } from "@/public/model/TweetModel";
+import { Tweet } from "@/public/model/TweetModel";
 import { computed } from "vue";
 import { ref } from "vue";
 
@@ -18,24 +18,50 @@ const profileImage = computed(() => {
 });
 
 function onProfileX96ImageLoadFailed(event: Event) {
+  console.log("profile image load failed");
   profileImageFailed.value = true;
 }
+
+function getTimeDifference(inputDate: Date) {
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - inputDate.getTime());
+  const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffHours <= 24) {
+    return diffHours + 'h';
+  } else if (diffDays <= 3) {
+    return diffDays + 'd';
+  } else {
+    return inputDate.getFullYear() + 'Y' + (inputDate.getMonth() + 1) + 'M' + inputDate.getDate() + 'D';
+  }
+}
+
+const tweetTime = computed(() => {
+  if (props.tweet.createAt == undefined) {
+    return "";
+  }
+
+  let date = new Date(props.tweet.createAt);
+  return getTimeDifference(date);
+})
 
 </script>
 
 <template>
   <div class="tweet-container">
     <div class="tweet-header">
-      <img class="profile-image" :src="profileImage" alt="Profile Image" @error="onProfileX96ImageLoadFailed" />
-      <div>
-        <div class="name">{{ tweet.user.name }}</div>
-        <div class="username">@{{ tweet.user.screenName }}</div>
+      <div id="profile-image" style="width: 40px; margin-right: 8px;">
+        <img class="profile-image" :src="profileImage" alt="Profile Image" @error="onProfileX96ImageLoadFailed" />
+      </div>
+      <div id="usermetainfo" style="display: flex;">
+        <div class="name" style="flex: 3; ">{{ tweet.user.name }}</div>
+        <div class="username" style="flex: 1; margin-left: 4px;">@{{ tweet.user.screenName }}</div>
+        <div class="timediff" style="flex: 1; margin-left: 4px;">{{ tweetTime }}</div>
       </div>
     </div>
+
     <div class="tweet-content">{{ tweet.fullText }}</div>
-    <div class="tweet-footer">
-      <span>{{ tweet.createAt }}</span>
-    </div>
   </div>
 </template>
 
@@ -53,8 +79,8 @@ function onProfileX96ImageLoadFailed(event: Event) {
 }
 
 .profile-image {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   margin-right: 10px;
 }
@@ -64,6 +90,10 @@ function onProfileX96ImageLoadFailed(event: Event) {
 }
 
 .username {
+  color: #657786;
+}
+
+.timediff {
   color: #657786;
 }
 
